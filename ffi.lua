@@ -1,4 +1,4 @@
-local nnpack = require 'env'
+local nnpack = require 'nnpack.env'
 local ffi = require 'ffi'
 
 ffi.cdef[[

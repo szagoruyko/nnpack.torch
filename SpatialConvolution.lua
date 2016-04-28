@@ -30,7 +30,6 @@ function SpatialConvolution:updateOutput(input)
 
    local batch_size = input:size(1)
    local inputWidth, inputHeight = input:size(4), input:size(3)
-   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
    local outputWidth = inputWidth + 2*self.padW - self.kW + 1
    local outputHeight = inputHeight + 2*self.padH - self.kH + 1
    local input_size = {width = inputWidth, height = inputHeight}
@@ -38,13 +37,13 @@ function SpatialConvolution:updateOutput(input)
          left = self.padW, right = self.padH}
    local kernel_size = {width = self.kW, height = self.kH}
 
-   self.output:resize(batch_size, nOutputPlane, outputHeight, outputWidth)
+   self.output:resize(batch_size, self.nOutputPlane, outputHeight, outputWidth)
 
    if batch_size == 1 then
       nnpack.errcheck('nnp_convolution_inference',
          nnpack.C.nnp_convolution_algorithm_auto,
          nnpack.C.nnp_convolution_kernel_transform_strategy_reuse,
-         nInputPlane, nOutputPlane,
+         self.nInputPlane, self.nOutputPlane,
          input_size, pad_size, kernel_size,
          input:data(),
          self.weight:data(),
@@ -56,7 +55,7 @@ function SpatialConvolution:updateOutput(input)
       nnpack.errcheck('nnp_convolution_output',
          nnpack.C.nnp_convolution_algorithm_auto,
          batch_size,
-         nInputPlane, nOutputPlane,
+         self.nInputPlane, self.nOutputPlane,
          input_size, pad_size, kernel_size,
          input:data(),
          self.weight:data(),
@@ -75,7 +74,6 @@ function SpatialConvolution:updateGradInput(input, gradOutput)
 
    local batch_size = input:size(1)
    local inputWidth, inputHeight = input:size(4), input:size(3)
-   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
    local input_size = {width = inputWidth, height = inputHeight}
    local pad_size = {top = self.padH, bottom = self.padH,
          left = self.padW, right = self.padH}
@@ -84,7 +82,7 @@ function SpatialConvolution:updateGradInput(input, gradOutput)
    nnpack.errcheck('nnp_convolution_input_gradient',
       nnpack.C.nnp_convolution_algorithm_auto,
       batch_size,
-      nInputPlane, nOutputPlane,
+      self.nInputPlane, self.nOutputPlane,
       input_size, pad_size, kernel_size,
       gradOutput:data(),
       self.weight:data(),
@@ -96,27 +94,40 @@ end
 
 function SpatialConvolution:accGradParameters(input, gradOutput, scale)
    scale = scale or 1
-   assert(scale == 1)
    input, gradOutput = makeContiguous(self, input, gradOutput)
    assert((self.bias and self.gradBias) or (self.bias == nil and self.gradBias == nil))
 
    local batch_size = input:size(1)
    local inputWidth, inputHeight = input:size(4), input:size(3)
-   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
    local input_size = {width = inputWidth, height = inputHeight}
    local pad_size = {top = self.padH, bottom = self.padH,
          left = self.padW, right = self.padH}
    local kernel_size = {width = self.kW, height = self.kH}
 
+   self._gradWeight = self._gradWeight or self.gradWeight.new()
+   self._gradWeight:resizeAs(self.gradWeight)
+
    nnpack.errcheck('nnp_convolution_kernel_gradient',
       nnpack.C.nnp_convolution_algorithm_auto,
       batch_size,
-      nInputPlane, nOutputPlane,
+      self.nInputPlane, self.nOutputPlane,
       input_size, pad_size, kernel_size,
       input:data(),
       gradOutput:data(),
-      self.gradWeight:data(),
+      self._gradWeight:data(),
       nil,
       nil)
+
+   self.gradWeight:add(scale, self._gradWeight)
+
+   local outputHeight, outputWidth = self.output:size(3), self.output:size(4)
+   self.fgradInput = self.fgradInput or input.new()
+   local ones = self.fgradInput
+   if ones:nDimension() ~= 2 or ones:numel() ~= outputHeight*outputWidth then
+      ones:resize(1,outputHeight * outputWidth):fill(1)
+   end
+   for i=1,batch_size do
+      self.gradBias:addmv(scale, gradOutput[i]:view(self.nOutputPlane,-1), ones:view(-1)) 
+   end
 end
 

@@ -124,9 +124,9 @@ function nnpacktest.SpatialConvolution_backward_batch()
      local weightcuda = gconv.gradWeight
      local biascuda = gconv.gradBias
 
-     local error = rescuda:float() - groundgrad:float()
-     local werror = weightcuda:float() - groundweight:float()
-     local berror = biascuda:float() - groundbias:float()
+     local error = rescuda - groundgrad
+     local werror = weightcuda - groundweight
+     local berror = biascuda - groundbias
 
      mytester:assertlt(error:abs():max(), precision_backward, 'error on state (backward) ')
      mytester:assertlt(werror:abs():max(), precision_backward, 'error on weight (backward) ')

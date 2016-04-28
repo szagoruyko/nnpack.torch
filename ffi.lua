@@ -65,17 +65,25 @@ enum nnp_status nnp_initialize(void);
 enum nnp_status nnp_deinitialize(void);
 
 enum nnp_status nnpack_SpatialConvolution_updateOutput(
-//void nnpack_SpatialConvolution_updateOutput(
           THFloatTensor *input,
           THFloatTensor *output,
           THFloatTensor *weight,
           THFloatTensor *bias,
-          int kW,
-          int kH,
-          int dW,
-          int dH,
-          int padW,
-          int padH);
+          int kW, int kH, int padW, int padH);
+
+enum nnp_status nnpack_SpatialConvolution_updateGradInput(
+    THFloatTensor *input,
+    THFloatTensor *gradOutput,
+    THFloatTensor *gradInput,
+    THFloatTensor *weight,
+    int kW, int kH, int padW, int padH);
+
+enum nnp_status nnpack_SpatialConvolution_accGradParameters(
+    THFloatTensor *input,
+    THFloatTensor *gradOutput,
+    THFloatTensor *gradWeight,
+    THFloatTensor *gradBias,
+    int kW, int kH, int padW, int padH);
 ]]
 
 local C = ffi.load'./libnnpack.so'

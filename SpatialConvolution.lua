@@ -32,45 +32,36 @@ function SpatialConvolution:updateOutput(input)
       self.weight:cdata(),
       self.bias:cdata(),
       self.kW, self.kH,
-      self.dW, self.dH,
       self.padW, self.padH
    )
    return self.output
 end
 
 function SpatialConvolution:updateGradInput(input, gradOutput)
-   if self.gradInput then
-      input, gradOutput = makeContiguous(self, input, gradOutput)
-      input.THNN.SpatialConvolution_updateGradInput(
-         input:cdata(),
-         gradOutput:cdata(),
-         self.gradInput:cdata(),
-         self.weight:cdata(),
-         self.finput:cdata(),
-         self.fgradInput:cdata(),
-         self.kW, self.kH,
-         self.dW, self.dH,
-         self.padW, self.padH
-      )
-      return self.gradInput
-   end
+   if not self.gradInput then return end
+   input, gradOutput = makeContiguous(self, input, gradOutput)
+   nnpack.errcheck('nnpack_SpatialConvolution_updateGradInput',
+      input:cdata(),
+      gradOutput:cdata(),
+      self.gradInput:cdata(),
+      self.weight:cdata(),
+      self.kW, self.kH,
+      self.padW, self.padH
+   )
+   return self.gradInput
 end
 
 function SpatialConvolution:accGradParameters(input, gradOutput, scale)
    scale = scale or 1
+   assert(scale == 1)
    input, gradOutput = makeContiguous(self, input, gradOutput)
    assert((self.bias and self.gradBias) or (self.bias == nil and self.gradBias == nil))
-   input.THNN.SpatialConvolutiong_accGradParameters(
+   nnpack.errcheck('nnpack_SpatialConvolution_accGradParameters',
       input:cdata(),
       gradOutput:cdata(),
       self.gradWeight:cdata(),
-      THNN.optionalTensor(self.gradBias),
-      self.finput:cdata(),
-      self.fgradInput:cdata(),
+      self.gradBias:cdata(),
       self.kW, self.kH,
-      self.dW, self.dH,
-      self.padW, self.padH,
-      scale
-   )
+      self.padW, self.padH)
 end
 

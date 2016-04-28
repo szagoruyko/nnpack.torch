@@ -19,6 +19,7 @@ end
 
 function SpatialConvolution:updateOutput(input)
    assert(self.dW == 1 and self.dH == 1)
+   assert(input:dim() == 4)
    -- backward compatibility
    if self.padding then
       self.padW = self.padding
@@ -26,28 +27,70 @@ function SpatialConvolution:updateOutput(input)
       self.padding = nil
    end
    input = makeContiguous(self, input)
-   nnpack.errcheck('nnpack_SpatialConvolution_updateOutput',
-      input:cdata(),
-      self.output:cdata(),
-      self.weight:cdata(),
-      self.bias:cdata(),
-      self.kW, self.kH,
-      self.padW, self.padH
-   )
+
+   local batch_size = input:size(1)
+   local inputWidth, inputHeight = input:size(4), input:size(3)
+   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
+   local outputWidth = inputWidth + 2*self.padW - self.kW + 1
+   local outputHeight = inputHeight + 2*self.padH - self.kH + 1
+   local input_size = {width = inputWidth, height = inputHeight}
+   local pad_size = {top = self.padH, bottom = self.padH,
+         left = self.padW, right = self.padH}
+   local kernel_size = {width = self.kW, height = self.kH}
+
+   self.output:resize(batch_size, nOutputPlane, outputHeight, outputWidth)
+
+   if batch_size == 1 then
+      nnpack.errcheck('nnp_convolution_inference',
+         nnpack.C.nnp_convolution_algorithm_auto,
+         nnpack.C.nnp_convolution_kernel_transform_strategy_reuse,
+         nInputPlane, nOutputPlane,
+         input_size, pad_size, kernel_size,
+         input:data(),
+         self.weight:data(),
+         self.bias:data(),
+         self.output:data(),
+         nil,
+         nil)
+   else
+      nnpack.errcheck('nnp_convolution_output',
+         nnpack.C.nnp_convolution_algorithm_auto,
+         batch_size,
+         nInputPlane, nOutputPlane,
+         input_size, pad_size, kernel_size,
+         input:data(),
+         self.weight:data(),
+         self.bias:data(),
+         self.output:data(),
+         nil,
+         nil)
+   end
    return self.output
 end
 
 function SpatialConvolution:updateGradInput(input, gradOutput)
    if not self.gradInput then return end
    input, gradOutput = makeContiguous(self, input, gradOutput)
-   nnpack.errcheck('nnpack_SpatialConvolution_updateGradInput',
-      input:cdata(),
-      gradOutput:cdata(),
-      self.gradInput:cdata(),
-      self.weight:cdata(),
-      self.kW, self.kH,
-      self.padW, self.padH
-   )
+   self.gradInput:resizeAs(input)
+
+   local batch_size = input:size(1)
+   local inputWidth, inputHeight = input:size(4), input:size(3)
+   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
+   local input_size = {width = inputWidth, height = inputHeight}
+   local pad_size = {top = self.padH, bottom = self.padH,
+         left = self.padW, right = self.padH}
+   local kernel_size = {width = self.kW, height = self.kH}
+
+   nnpack.errcheck('nnp_convolution_input_gradient',
+      nnpack.C.nnp_convolution_algorithm_auto,
+      batch_size,
+      nInputPlane, nOutputPlane,
+      input_size, pad_size, kernel_size,
+      gradOutput:data(),
+      self.weight:data(),
+      self.gradInput:data(),
+      nil,
+      nil)
    return self.gradInput
 end
 
@@ -56,12 +99,24 @@ function SpatialConvolution:accGradParameters(input, gradOutput, scale)
    assert(scale == 1)
    input, gradOutput = makeContiguous(self, input, gradOutput)
    assert((self.bias and self.gradBias) or (self.bias == nil and self.gradBias == nil))
-   nnpack.errcheck('nnpack_SpatialConvolution_accGradParameters',
-      input:cdata(),
-      gradOutput:cdata(),
-      self.gradWeight:cdata(),
-      self.gradBias:cdata(),
-      self.kW, self.kH,
-      self.padW, self.padH)
+
+   local batch_size = input:size(1)
+   local inputWidth, inputHeight = input:size(4), input:size(3)
+   local nOutputPlane, nInputPlane = self.weight:size(1), self.weight:size(2)
+   local input_size = {width = inputWidth, height = inputHeight}
+   local pad_size = {top = self.padH, bottom = self.padH,
+         left = self.padW, right = self.padH}
+   local kernel_size = {width = self.kW, height = self.kH}
+
+   nnpack.errcheck('nnp_convolution_kernel_gradient',
+      nnpack.C.nnp_convolution_algorithm_auto,
+      batch_size,
+      nInputPlane, nOutputPlane,
+      input_size, pad_size, kernel_size,
+      input:data(),
+      gradOutput:data(),
+      self.gradWeight:data(),
+      nil,
+      nil)
 end
 

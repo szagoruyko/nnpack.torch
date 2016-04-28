@@ -1,4 +1,4 @@
-Torch bindings for NNPACK 
+Torch FFI-bindings for NNPACK 
 =============
 
 NNPACK is a fast CPU implementation of convolution operations for training ConvNets:
@@ -19,4 +19,4 @@ Limitations of these bindings:
 
 # Installation
 
-Follow installation steps at https://github.com/Maratyszcza/NNPACK to generate `nnpack.h` and `nnpack.a`. These 2 files are used to compile shared `libnnpack.so` using Makefile in this repo.
+Follow installation steps at https://github.com/Maratyszcza/NNPACK to generate `libnnpack.so` and place where `LD_LIBRARY_PATH` can find it.

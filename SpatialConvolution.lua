@@ -49,7 +49,7 @@ function SpatialConvolution:updateOutput(input)
          self.weight:data(),
          self.bias:data(),
          self.output:data(),
-         nil,
+         nnpack.threadpool,
          nil)
    else
       nnpack.errcheck('nnp_convolution_output',
@@ -61,7 +61,7 @@ function SpatialConvolution:updateOutput(input)
          self.weight:data(),
          self.bias:data(),
          self.output:data(),
-         nil,
+         nnpack.threadpool,
          nil)
    end
    return self.output
@@ -87,7 +87,7 @@ function SpatialConvolution:updateGradInput(input, gradOutput)
       gradOutput:data(),
       self.weight:data(),
       self.gradInput:data(),
-      nil,
+      nnpack.threadpool,
       nil)
    return self.gradInput
 end
@@ -115,7 +115,7 @@ function SpatialConvolution:accGradParameters(input, gradOutput, scale)
       input:data(),
       gradOutput:data(),
       self._gradWeight:data(),
-      nil,
+      nnpack.threadpool,
       nil)
 
    self.gradWeight:add(scale, self._gradWeight)

@@ -1,7 +1,7 @@
 require 'nn'
+local ffi = require 'ffi'
 local nnpack = require 'nnpack.env'
 nnpack.C = require 'nnpack.ffi'
-nnpack.C.nnp_initialize()
 
 local errcheck = function(f, ...)
    local status = nnpack.C[f](...)
@@ -12,8 +12,6 @@ local errcheck = function(f, ...)
 end
 nnpack.errcheck = errcheck
 
-require 'nnpack.SpatialConvolution'
-
 function nnpack.convert(net, dst)
    net:apply(function(x)
       if torch.typename(x):find'SpatialConvolution' and x.dW == 1 and x.dH == 1 then
@@ -22,5 +20,15 @@ function nnpack.convert(net, dst)
    end)
    return net
 end
+
+errcheck('nnp_initialize')
+
+nnpack.threadpool = nnpack.C.pthreadpool_create(torch.getnumthreads())
+ffi.gc(nnpack.threadpool, nnpack.C.pthreadpool_destroy)
+
+-- disable for now, unstable
+nnpack.threadpool = nil
+
+require 'nnpack.SpatialConvolution'
 
 return nnpack

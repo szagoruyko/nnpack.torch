@@ -14,8 +14,7 @@ Limitations of NNPACK:
 
 Limitations of these bindings:
 
- * no pthreadpool yet, runs in the same thread
- * `accGradParameters` test is failing on `gradWeight` and `gradBias`
+ * `accGradParameters` test is failing on `gradWeight`
 
 # Installation
 

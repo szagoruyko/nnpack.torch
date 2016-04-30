@@ -120,14 +120,16 @@ function SpatialConvolution:accGradParameters(input, gradOutput, scale)
 
    self.gradWeight:add(scale, self._gradWeight)
 
-   local outputHeight, outputWidth = self.output:size(3), self.output:size(4)
-   self.fgradInput = self.fgradInput or input.new()
-   local ones = self.fgradInput
-   if ones:nDimension() ~= 2 or ones:numel() ~= outputHeight*outputWidth then
-      ones:resize(1,outputHeight * outputWidth):fill(1)
-   end
-   for i=1,batch_size do
-      self.gradBias:addmv(scale, gradOutput[i]:view(self.nOutputPlane,-1), ones:view(-1)) 
+   if self.bias then
+      local outputHeight, outputWidth = self.output:size(3), self.output:size(4)
+      self.fgradInput = self.fgradInput or input.new()
+      local ones = self.fgradInput
+      if ones:nDimension() ~= 2 or ones:numel() ~= outputHeight*outputWidth then
+         ones:resize(1,outputHeight * outputWidth):fill(1)
+      end
+      for i=1,batch_size do
+         self.gradBias:addmv(scale, gradOutput[i]:view(self.nOutputPlane,-1), ones:view(-1)) 
+      end
    end
 end
 

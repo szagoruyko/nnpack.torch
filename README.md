@@ -28,7 +28,7 @@ luarocks install https://raw.githubusercontent.com/szagoruyko/nnpack.torch/maste
 Similar to `cudnn.convert` in [cudnn.torch](https://github.com/soumith/cudnn.torch) easy backend switching is supported. To switch to `nnpack` just do:
 
 ```lua
-cudnn.convert(net, nnpack)
+nnpack.convert(net, nnpack)
 ```
 
 There will be no memory copy, just metatables will be swapped.

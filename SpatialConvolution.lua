@@ -18,7 +18,6 @@ local function makeContiguous(self, input, gradOutput)
 end
 
 function SpatialConvolution:updateOutput(input)
-   assert(self.dW == 1 and self.dH == 1)
    assert(input:dim() == 4)
    -- backward compatibility
    if self.padding then
@@ -36,15 +35,16 @@ function SpatialConvolution:updateOutput(input)
    local pad_size = {top = self.padH, bottom = self.padH,
          left = self.padW, right = self.padH}
    local kernel_size = {width = self.kW, height = self.kH}
+   local stride = {width = self.dW, height = self.dH}
 
    self.output:resize(batch_size, self.nOutputPlane, outputHeight, outputWidth)
 
    if batch_size == 1 then
       nnpack.errcheck('nnp_convolution_inference',
          nnpack.C.nnp_convolution_algorithm_auto,
-         nnpack.C.nnp_convolution_kernel_transform_strategy_reuse,
+         nnpack.C.nnp_convolution_transform_strategy_tuple_based,
          self.nInputPlane, self.nOutputPlane,
-         input_size, pad_size, kernel_size,
+         input_size, pad_size, kernel_size, stride,
          input:data(),
          self.weight:data(),
          self.bias:data(),

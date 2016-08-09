@@ -10,7 +10,6 @@ Make sure you have AVX2 compatible Skylake/Broadwell/Haswell CPU.
 
 Limitations of NNPACK:
 
- * strided convolutions are not supported
  * there is no scale parameter on `accGradParameters` call
 
 # Installation

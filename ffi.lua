@@ -470,6 +470,6 @@ enum nnp_status nnp_relu_input_gradient(
 	pthreadpool_t threadpool);
 ]]
 
-local C = ffi.load'nnpack'
--- local C = ffi.load'./libnnpack.so'
+-- local C = ffi.load'nnpack'
+local C = ffi.load'./libnnpack.so'
 return C

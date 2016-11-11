@@ -2,15 +2,23 @@ require 'nn'
 local ffi = require 'ffi'
 local nnpack = require 'nnpack.env'
 nnpack.C = require 'nnpack.ffi'
+require 'nnpack.functional'
 
 local errcheck = function(f, ...)
    local status = nnpack.C[f](...)
    if status ~= nnpack.C.nnp_status_success then
-      local str = status
+      local str = tostring(status)
       error('Error in NNPACK: ' .. str .. ' ('..f..')')
    end
 end
 nnpack.errcheck = errcheck
+
+function nnpack.typecheck(...)
+   for i,v in ipairs{...} do
+      assert(torch.isTensor(v) and torch.type(v) == 'torch.FloatTensor', 'only float supported')
+      assert(v:dim() == 4, 'not a 4D tensor')
+   end
+end
 
 function nnpack.convert(net, dst)
    net:apply(function(x)

@@ -140,6 +140,84 @@ function nnpacktest.SpatialConvolution_backward_batch()
 end
 
 
+function nnpacktest.functional_conv2d_forward_single()
+   local from = math.random(1,32)
+   local to = math.random(1,64)
+   local ki = math.random(1,15)
+   local kj = math.random(1,15)
+   local si,sj = 1,1
+   local outi = math.random(1,64)
+   local outj = math.random(1,64)
+   local ini = (outi-1)*si+ki
+   local inj = (outj-1)*sj+kj
+
+   local input = torch.randn(1,from,inj,ini):float()
+   local sconv = nn.SpatialConvolution(from,to,ki,kj,si,sj):float():noBias()
+
+   local groundtruth = sconv:forward(input)
+   local resfloat = nnpack.conv2d(input, sconv.weight, si, sj)
+   mytester:asserteq(resfloat:dim(), 4, 'error in dimension')
+   local error = resfloat:float() - groundtruth:float()
+   mytester:assertlt(error:abs():max(), precision_forward, 'error on state (forward)')
+end
+
+function nnpacktest.functional_conv2d_forward_batch()
+   local bs = math.random(1,32)
+   local from = math.random(1,32)
+   local to = math.random(1,64)
+   local ki = math.random(1,15)
+   local kj = math.random(1,15)
+   -- local si = math.random(1,ki)
+   -- local sj = math.random(1,kj)
+   local si,sj = 1,1
+   local outi = math.random(1,64)
+   local outj = math.random(1,64)
+   local ini = (outi-1)*si+ki
+   local inj = (outj-1)*sj+kj
+
+   local input = torch.randn(bs,from,inj,ini):float()
+   local sconv = nn.SpatialConvolution(from,to,ki,kj,si,sj):float():noBias()
+
+   local groundtruth = sconv:forward(input)
+   local rescuda = nnpack.conv2d(input, sconv.weight, si, sj)
+   local error = rescuda:float() - groundtruth:float()
+   mytester:assertlt(error:abs():max(), precision_forward, 'error on state (forward) ')
+end
+
+function nnpacktest.functional_conv2d_backward()
+   local bs = math.random(1,32)
+   local from = math.random(1,32)
+   local to = math.random(1,64)
+   local ki = math.random(1,15)
+   local kj = math.random(1,15)
+   -- local si = math.random(1,ki)
+   -- local sj = math.random(1,kj)
+   local si,sj = 1,1
+   local outi = math.random(1,64)
+   local outj = math.random(1,64)
+   local ini = (outi-1)*si+ki
+   local inj = (outj-1)*sj+kj
+   local scale = 1
+
+   local input = torch.randn(bs,from,inj,ini):float()
+   local gradOutput = torch.randn(bs,to,outj,outi):float()
+   local sconv = nn.SpatialConvolution(from,to,ki,kj,si,sj):float():noBias()
+   sconv:forward(input)
+   sconv:zeroGradParameters()
+   local groundgrad = sconv:backward(input, gradOutput, scale)
+   local groundweight = sconv.gradWeight
+
+   local rescuda = nnpack.conv2d_updateGradInput(input, sconv.weight, gradOutput, si, sj)
+   local weightcuda = nnpack.conv2d_accGradParameters(input, sconv.weight, gradOutput, si, sj)
+
+   local error = rescuda - groundgrad
+   local werror = weightcuda - groundweight
+
+   mytester:assertlt(error:abs():max(), precision_backward, 'error on state (backward) ')
+   mytester:assertlt(werror:abs():max(), precision_backward, 'error on weight (backward) ')
+end
+
+
 torch.setdefaulttensortype('torch.FloatTensor')
 math.randomseed(os.time())
 mytester = torch.Tester()

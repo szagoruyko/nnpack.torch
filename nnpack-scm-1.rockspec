@@ -25,6 +25,7 @@ build = {
       ['nnpack.init'] = 'init.lua',
       ['nnpack.env'] = 'env.lua',
       ['nnpack.ffi'] = 'ffi.lua',
+      ['nnpack.functional'] = 'functional.lua',
       ['nnpack.SpatialConvolution'] = 'SpatialConvolution.lua',
    }
 }

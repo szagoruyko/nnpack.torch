@@ -13,7 +13,7 @@ function nnpack.conv2d(input, weight, dW, dH, padW, padH)
    local outputWidth  = math.floor((inputWidth + 2*padW - kW) / dW) + 1
    local outputHeight = math.floor((inputHeight + 2*padH - kH) / dH) + 1
    local input_size = {width = inputWidth, height = inputHeight}
-   local pad_size = {top = padH, bottom = padH, left = padW, right = padH}
+   local pad_size = {top = padH, bottom = padH, left = padW, right = padW}
    local kernel_size = {width = kW, height = kH}
    local stride = {width = dW, height = dH}
 
@@ -62,7 +62,7 @@ function nnpack.conv2d_updateGradInput(input, weight, gradOutput, dW, dH, padW, 
       input:size(1),
       weight:size(2), weight:size(1),
       {width = input:size(4), height = input:size(3)},
-      {top = padH, bottom = padH, left = padW, right = padH},
+      {top = padH, bottom = padH, left = padW, right = padW},
       {width = weight:size(4), height = weight:size(3)},
       gradOutput:data(),
       weight:data(),
@@ -82,7 +82,7 @@ function nnpack.conv2d_accGradParameters(input, weight, gradOutput, dW, dH, padW
       input:size(1),
       weight:size(2), weight:size(1),
       {width = input:size(4), height = input:size(3)},
-      {top = padH, bottom = padH, left = padW, right = padH},
+      {top = padH, bottom = padH, left = padW, right = padW},
       {width = weight:size(4), height = weight:size(3)},
       input:data(),
       gradOutput:data(),
